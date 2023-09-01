@@ -20,6 +20,7 @@ void initGame(Game *g, int depth) {
 Node *possibleMoves(Game *g) {
     Node *head = NULL;
     Node *prev = NULL;
+    int count = 0;
 
     int i = (g->mustMoveIn == ANYWHERE ? 0 : g->mustMoveIn);
     for (; i < 9; i++) {
@@ -39,7 +40,7 @@ Node *possibleMoves(Game *g) {
                 }
 
                 head = malloc(sizeof(Node));
-                initNode(head, prev, new);
+                initNode(head, prev, new, count);
                 prev = head;
                 head = NULL;
             }
@@ -85,7 +86,7 @@ int generalGameIsFinished(uint8_t *g) {
     return NO_RESULT;
 }
 
-void initNode(Node *n, Node *next, Game *g) {
+void initNode(Node *n, Node *next, Game *g, int count) {
     n->g = g;
     n->next = next;
 }

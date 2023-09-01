@@ -24,6 +24,7 @@ typedef struct Game {
 typedef struct Node {
     Game *g;
     struct Node *next;
+    int count; // Number of nodes after this one in the linked list (but still always check if Node == NULL)
 } Node;
 
 void initGame(Game *g, int depth);
@@ -32,6 +33,6 @@ float gameEvaluation(Game *g);
 bool isTerminal(Game *g);
 int generalGameIsFinished(uint8_t *g);
 
-void initNode(Node *n, Node *prev, Game *g);
+void initNode(Node *n, Node *prev, Game *g, int count);
 
 #endif // ifndef GAME_H
