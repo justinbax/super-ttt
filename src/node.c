@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdbool.h>
 
 void initGame(Game *g, int depth) {
     for (int i = 0; i < 9; i++) {
@@ -12,37 +13,52 @@ void initGame(Game *g, int depth) {
         g->metaBoard[i] = EMPTY;
     }
 
-    g->next = X;
+    g->nextPl = P_X;
     g->depth = depth;
     g->mustMoveIn = ANYWHERE;
+
+    g->nextMoveMetaPtr = ANYWHERE;
+    g->nextMovePtr = 0;
 }
 
-Node *possibleMoves(Game *g) {
-    Node *head = NULL;
-    Node *prev = NULL;
-    int count = 0;
+Game *getNextMove(Game *g) {
+    int i = g->nextMoveMetaPtr;
+    if (i < 0) {
+        // ANYWHERE or FINISHED_SEARCH
+        if (i == FINISHED_SEARCH) {
+            return NULL;
+        }
+        i = (g->mustMoveIn == ANYWHERE ? 0 : g->mustMoveIn);
+    }
 
-    int i = (g->mustMoveIn == ANYWHERE ? 0 : g->mustMoveIn);
     for (; i < 9; i++) {
         // Loops for every i from 0 to 8 if mustMoveIn == ANYWHERE, loops once with i = mustMoveIn otherwise (breaks at the end)
-        for (int j = 0; j < 9; j++) {
-            if (g->board[i][j] == EMPTY) {
+        for (; g->nextMovePtr < 9; g->nextMovePtr++) {
+            if (g->board[i][g->nextMovePtr] == EMPTY) {
                 Game *new = malloc(sizeof(Game));
                 initGame(new, g->depth - 1);
                 memcpy(new->board, g->board, sizeof(uint8_t) * 9 * 9);
                 memcpy(new->metaBoard, g->metaBoard, sizeof(uint8_t) * 9);
-                new->board[i][j] = g->next;
-                new->next = (g->next == X ? O : X);
+                new->board[i][g->nextMovePtr] = g->nextPl;
+                new->nextPl = (g->nextPl == P_X ? P_O : P_X);
 
                 if (new->metaBoard[i] == EMPTY) {
                     new->metaBoard[i] = generalGameIsFinished(new->board[i]);
-                    new->mustMoveIn = (new->metaBoard[i] != NO_RESULT ? ANYWHERE : j);
+                    new->mustMoveIn = (new->metaBoard[i] != NO_RESULT ? ANYWHERE : g->nextMovePtr);
                 }
 
-                head = malloc(sizeof(Node));
-                initNode(head, prev, new, count);
-                prev = head;
-                head = NULL;
+                g->nextMoveMetaPtr = i;
+                g->nextMovePtr++;
+                
+                if (g->nextMovePtr > 8) {
+                    g->nextMovePtr = 0;
+                    g->nextMoveMetaPtr++;
+                    if (g->nextMoveMetaPtr > 8 || g->mustMoveIn != ANYWHERE) {
+                        g->nextMoveMetaPtr = FINISHED_SEARCH;
+                    }
+                }
+
+                return new;
             }
         }
         if (g->mustMoveIn != ANYWHERE) {
@@ -50,6 +66,23 @@ Node *possibleMoves(Game *g) {
         }
     }
 
+    g->nextMoveMetaPtr = FINISHED_SEARCH;
+    return NULL;
+}
+
+Node *getAllMoves(Game *g) {
+    Node *prev = NULL;
+    Game *move;
+    while (1) {
+        move = getNextMove(g);
+        if (move == NULL) {
+            break;
+        }
+
+        Node *new = malloc(sizeof(Node));
+        initNode(new, prev, move);
+        prev = new;
+    }
     return prev;
 }
 
@@ -57,8 +90,8 @@ float gameEvaluation(Game *g) {
     // TODO improve this heuristic
     int count = 0;
     for (int i = 0; i < 9; i++) {
-        count += g->metaBoard[i] == X;
-        count -= g->metaBoard[i] == O;
+        count += g->metaBoard[i] == P_X;
+        count -= g->metaBoard[i] == P_O;
     }
 
     return count / 9.0f;
@@ -86,7 +119,7 @@ int generalGameIsFinished(uint8_t *g) {
     return NO_RESULT;
 }
 
-void initNode(Node *n, Node *next, Game *g, int count) {
+void initNode(Node *n, Node *next, Game *g) {
     n->g = g;
     n->next = next;
 }

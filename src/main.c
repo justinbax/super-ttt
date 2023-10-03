@@ -10,16 +10,20 @@ typedef struct ThreadArguments {
 
 float minimax(Game *g, bool isX) {
 
-    Node *moves = possibleMoves(g);
-
-    if (g->depth < 0 || moves == NULL) {
+    if (g->depth < 0) {
         return gameEvaluation(g);
     }
 
+    Game *move;
     float best = (isX ? -100.0f : 100.0f);
 
-    while (moves != NULL) {
-        float eval = minimax(moves->g, !isX);
+    while (1) {
+        move = getNextMove(g);
+        if (move == NULL) {
+            break;
+        }
+
+        float eval = minimax(move, !isX);
 
         if (isX) {
             best = (eval > best ? eval : best);
@@ -27,10 +31,7 @@ float minimax(Game *g, bool isX) {
             best = (eval < best ? eval : best);
         }
 
-        Node *old = moves;
-        moves = moves->next;
-        free(old->g);
-        free(old);
+        free(move);
     }
 
     return best;
@@ -38,7 +39,9 @@ float minimax(Game *g, bool isX) {
 
 int countMoves(Node *n) {
     int count;
-    for (count = 0; n != NULL; n = n->next) {}
+    for (count = 0; n != NULL; n = n->next) {
+        count++;
+    }
     return count;
 }
 
@@ -49,8 +52,8 @@ void *threadMinimax(void *args) {
 }
 
 float startMinimax(Game *g) {
-    Node *moves = possibleMoves(g);
-    
+    Node *moves = getAllMoves(g);
+
     int count = countMoves(moves);
     pthread_t *threads = malloc(sizeof(pthread_t) * count);
     ThreadArguments *args = malloc(sizeof(ThreadArguments) * count);
@@ -66,7 +69,7 @@ float startMinimax(Game *g) {
         pthread_join(threads[i], NULL);
     }
 
-    float best = -100.0f;
+    float best = -1000.0f;
     for (int i = 0; i < count; i++) {
         best = (args[i].returnValue > best ? args[i].returnValue : best);
         free(args[i].toEvaluate->g);
@@ -81,11 +84,14 @@ float startMinimax(Game *g) {
 
 int main() {
     printf("super-ttt\n");
+    printf("%d\n", sizeof(Game));
+    printf("%d\n", sizeof(Node));
 
     Game initial;
-    initGame(&initial, 8);
+    initGame(&initial, 7);
 
     float e = startMinimax(&initial);
+    //float e = minimax(&initial, true);
     printf("%f\n", e);
 
     return 0;
