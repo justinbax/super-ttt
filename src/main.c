@@ -3,12 +3,16 @@
 
 #include "node.h"
 
+long long unsigned int count = 0;
+
 typedef struct ThreadArguments {
     float returnValue;
     Node *toEvaluate;
 } ThreadArguments;
 
 float minimax(Game *g, bool isX) {
+
+    count++;
 
     if (g->depth < 0) {
         return gameEvaluation(g);
@@ -88,11 +92,12 @@ int main() {
     printf("%d\n", sizeof(Node));
 
     Game initial;
-    initGame(&initial, 7);
+    initGame(&initial, 5);
 
     float e = startMinimax(&initial);
     //float e = minimax(&initial, true);
     printf("%f\n", e);
+    printf("Analyzed %i positions\n", count);
 
     return 0;
 }
