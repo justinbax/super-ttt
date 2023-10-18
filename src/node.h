@@ -17,14 +17,13 @@
 typedef struct Game {
     uint8_t board[9][9];
     uint8_t metaBoard[9];
-    //uint8_t boardOccupations[9];
+    uint8_t boardOccupations[9]; // How filled each subboard is ()
     int8_t nextPl; // Who is to move
     int8_t nextMoveMetaPtr; // From where metagame (0-9) to start search for next move (necessary for getNextMove)
     int8_t nextMovePtr; // Same, but in subgame
     int8_t mustMoveIn; // Player must move in which square
     int8_t score; // Number of won X subgames - number of won O subgames
     int depth; // Current minimax search depth
-
 } Game;
 
 typedef struct Node {

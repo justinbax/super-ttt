@@ -3,16 +3,17 @@
 
 #include "node.h"
 
-long long unsigned int count = 0;
+long long unsigned int counts[128] = {0};
 
 typedef struct ThreadArguments {
     float returnValue;
+    int threadIndex;
     Node *toEvaluate;
 } ThreadArguments;
 
-float minimax(Game *g, bool isX) {
+float minimax(Game *g, bool isX, int i) {
 
-    count++;
+    counts[i]++;
 
     if (g->depth < 0) {
         return gameEvaluation(g);
@@ -27,7 +28,7 @@ float minimax(Game *g, bool isX) {
             break;
         }
 
-        float eval = minimax(move, !isX);
+        float eval = minimax(move, !isX, i);
 
         if (isX) {
             best = (eval > best ? eval : best);
@@ -51,7 +52,7 @@ int countMoves(Node *n) {
 
 void *threadMinimax(void *args) {
     ThreadArguments *arguments = (ThreadArguments *)args;
-    arguments->returnValue = minimax(arguments->toEvaluate->g, false); // Because X starts, so second move is O
+    arguments->returnValue = minimax(arguments->toEvaluate->g, false, arguments->threadIndex); // Because X starts, so second move is O
     return NULL;
 }
 
@@ -59,12 +60,18 @@ float startMinimax(Game *g) {
     Node *moves = getAllMoves(g);
 
     int count = countMoves(moves);
+    if (count > 127) {
+        printf("Something horrible happened.\n");
+        return 0xDEADBEEF;
+    }
+
     pthread_t *threads = malloc(sizeof(pthread_t) * count);
     ThreadArguments *args = malloc(sizeof(ThreadArguments) * count);
 
     for (int i = 0; i < count; i++) {
         args[i].returnValue = -1000.0f;
         args[i].toEvaluate = moves;
+        args[i].threadIndex = i;
         pthread_create(&threads[i], NULL, threadMinimax, (void *)(&args[i]));
         moves = moves->next;
     }
@@ -88,16 +95,17 @@ float startMinimax(Game *g) {
 
 int main() {
     printf("super-ttt\n");
-    printf("%d\n", sizeof(Game));
-    printf("%d\n", sizeof(Node));
 
     Game initial;
     initGame(&initial, 5);
 
     float e = startMinimax(&initial);
-    //float e = minimax(&initial, true);
     printf("%f\n", e);
-    printf("Analyzed %i positions\n", count);
+    long long unsigned int total = 0;
+    for (int i = 0; i < 128; i++) {
+        total += counts[i];
+    }
+    printf("Analyzed %llu positions\n", total);
 
     return 0;
 }

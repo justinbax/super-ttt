@@ -8,7 +8,7 @@
 void initGame(Game *g, int depth) {
     memset(g->board, EMPTY, 81);
     memset(g->metaBoard, NO_RESULT, 9);
-    //memset(g->boardOccupations, 0, 9);
+    memset(g->boardOccupations, 0, 9);
 
     g->nextPl = P_X;
     g->depth = depth;
@@ -41,13 +41,12 @@ Game *getNextMove(Game *g) {
                 initGame(new, g->depth - 1);
                 memcpy(new->board, g->board, sizeof(uint8_t) * 9 * 9);
                 memcpy(new->metaBoard, g->metaBoard, sizeof(uint8_t) * 9);
-                //memcpy(new->boardOccupations, g->boardOccupations, sizeof(uint8_t) * 9);
+                memcpy(new->boardOccupations, g->boardOccupations, sizeof(uint8_t) * 9);
                 new->board[i][g->nextMovePtr] = g->nextPl;
-                //new->boardOccupations[i]++;
+                new->boardOccupations[i]++;
                 new->nextPl = -1 * g->nextPl;
 
-                int subgameStatus = generalGameIsFinishedFromMove(new->board[i], g->nextMovePtr, 0);
-                //int subgameStatus = generalGameIsFinishedFromMove(new->board[i], g->nextMovePtr, g->boardOccupations[i]);
+                int subgameStatus = generalGameIsFinishedFromMove(new->board[i], g->nextMovePtr, g->boardOccupations[i]);
                 new->metaBoard[i] = subgameStatus;
                 if (subgameStatus == P_X) {
                     new->score++;
@@ -102,6 +101,10 @@ float gameEvaluation(Game *g) {
 }
 
 int generalGameIsFinishedFromMove(uint8_t *g, int pos, int filled) {
+    if (filled == 9) {
+        return TIE;
+    }
+
     if (g[4] != EMPTY) {
         // Both diags
         if (g[0] == g[4] && g[4] == g[8]) {
@@ -140,58 +143,6 @@ int generalGameIsFinishedFromMove(uint8_t *g, int pos, int filled) {
     }
 
     return NO_RESULT;
-
-    /*
-    for (int i = 0; i < 3; i++) {
-        if ((((g[3*i] == g[3*i+1]) && (g[3*i] == g[3*i+2])) // Horizontal
-         || ((g[i] == g[i+3]) && (g[i] == g[i+6]))) // Vertical
-         && g[4*i] != EMPTY) { // Non-empty test on the only common square of both tests (square 0, 4 or 8)
-            return g[4*i];
-        }
-    }
-
-    return NO_RESULT;
-    */
-
-
-    /*
-    if (filled == 9) {
-        return TIE;
-    }
-
-    int row = pos / 3;
-    int column = pos % 3;
-    int rowCount = g[pos];
-    int columnCount = g[pos];
-    int posDiagCount = 0;
-    int negDiagCount = 0;
-    for (int i = 1; i < 3; i++) {
-        rowCount += g[((column + i) % 3) + 3 * row];
-        columnCount += g[(pos + 3 * i) % 9];
-    }
-
-    if (rowCount == 3 || columnCount == 3) {
-        return P_X;
-    }
-    if (rowCount == -3 || columnCount == -3) {
-        return P_O;
-    }
-
-    // Integer division is rounded towards zero
-    if (row == column) {
-        posDiagCount = (g[0] + g[4] + g[8]);
-        if (posDiagCount / 3 != 0) {
-            return posDiagCount / 3;
-        }
-    } else if (row + column == 3) {
-        negDiagCount = (g[3] + g[5] + g[7]);
-        if (negDiagCount / 3 != 0) {
-            return negDiagCount / 3;
-        }
-    }
-
-    return NO_RESULT;
-    */
 }
 
 void initNode(Node *n, Node *next, Game *g) {
